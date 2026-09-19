@@ -126,6 +126,8 @@
           Last checked: <strong id="last-checked">Not yet checked</strong>
         </p>
 
+        <p class="check-result"></p>
+
         <button class="button" onclick="checkStatus()">
           Check now
         </button>
@@ -174,27 +176,21 @@
   <script>
     async function checkStatus() {
   const statusElement = document.querySelector(".status");
-  const lastCheckedElement = document.querySelector("#last-checked");
-  const details = document.querySelector(".details");
+  const lastCheckedElement = document.getElementById("last-checked");
+  const resultElement = document.querySelector(".check-result");
 
   statusElement.textContent = "Checking Tate...";
-  
+
   try {
     const response = await fetch("/.netlify/functions/check-tate");
+
+    if (!response.ok) {
+      throw new Error("The Tate checker returned an error.");
+    }
+
     const result = await response.json();
 
-    if (result.checkedAt) {
-      const checkedDate = new Date(result.checkedAt);
-
-      lastCheckedElement.textContent =
-        checkedDate.toLocaleString("en-GB", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-    }
+    console.log("Tate check result:", result);
 
     if (result.status === "ON_DISPLAY") {
       statusElement.textContent = "ON DISPLAY";
@@ -204,30 +200,33 @@
       statusElement.textContent = "Check required";
     }
 
-    const existingMessage = document.querySelector(".check-result");
+    if (result.checkedAt && lastCheckedElement) {
+      const date = new Date(result.checkedAt);
 
-    if (existingMessage) {
-      existingMessage.remove();
+      lastCheckedElement.textContent = date.toLocaleString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
     }
 
-    const message = document.createElement("p");
-    message.className = "check-result";
-    message.textContent = result.message;
-
-    details.appendChild(message);
+    if (resultElement) {
+      resultElement.textContent = result.message;
+    }
 
   } catch (error) {
+    console.error("Tate check failed:", error);
+
     statusElement.textContent = "Check failed";
 
-    const message = document.createElement("p");
-    message.className = "check-result";
-    message.textContent =
-      "The Tate check could not be completed. Please try again later.";
-
-    details.appendChild(message);
+    if (resultElement) {
+      resultElement.textContent =
+        "The Tate check could not be completed. Please try again.";
+    }
   }
 }
-  }
 }
   </script>
 
