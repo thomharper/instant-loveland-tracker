@@ -1,40 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instant Loveland — Tate Display Tracker</title>
+exports.handler = async function () {
+  const TATE_URL =
+    "https://www.tate.org.uk/art/artworks/olitski-instant-loveland-t07244";
 
-  <style>
-    body {
-      margin: 0;
-      background: #f3f1ec;
-      color: #222;
-      font-family: Georgia, "Times New Roman", serif;
+  try {
+    const response = await fetch(TATE_URL, {
+      headers: {
+        "User-Agent": "Instant-Loveland-Tracker/1.0"
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          status: "CHECK_REQUIRED",
+          message: `Tate returned HTTP ${response.status}.`,
+          checkedAt: new Date().toISOString()
+        })
+      };
     }
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 40px 24px 60px;
-    }
+    const html = await response.text();
 
-    header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    h1 {
-      font-size: 42px;
-      font-weight: normal;
-      margin: 0 0 10px;
-    }
+    const displayPatterns = [
+      /on display at tate modern/i,
+      /on display at tate britain/i,
+      /currently on display at tate modern/i,
+      /currently on display at tate britain/i
+    ];
 
-    .artist {
-      font-size: 20px;
-      color: #666;
-    }
+    const isOnDisplay = displayPatterns.some(pattern =>
+      pattern.test(text)
+    );
 
+    const result = {
+      status: isOnDisplay ? "ON_DISPLAY" : "NOT_CONFIRMED",
+      message: isOnDisplay
+        ? "Tate's website contains evidence that the work is currently on display."
+        : "Tate's artwork page does not currently confirm that the work is on public display.",
+      source: TATE_URL,
+      checkedAt: new Date().toISOString()
+    };
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      },
+      body: JSON.stringify(result)
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        status: "CHECK_REQUIRED",
+        message: "The Tate check could not be completed.",
+        error: error.message,
+        checkedAt: new Date().toISOString()
+      })
+    };
+  }
+};
     .card {
       background: white;
       padding: 32px;
