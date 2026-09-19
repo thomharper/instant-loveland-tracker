@@ -172,9 +172,47 @@
   </main>
 
   <script>
-    function checkStatus() {
-      alert("The Tate checking system isn't connected yet. We'll build that next.");
+    async function checkStatus() {
+  const statusElement = document.querySelector(".status");
+  const details = document.querySelector(".details");
+
+  statusElement.textContent = "Checking Tate...";
+  
+  try {
+    const response = await fetch("/.netlify/functions/check-tate");
+    const result = await response.json();
+
+    if (result.status === "ON_DISPLAY") {
+      statusElement.textContent = "ON DISPLAY";
+    } else if (result.status === "NOT_CONFIRMED") {
+      statusElement.textContent = "Not currently confirmed";
+    } else {
+      statusElement.textContent = "Check required";
     }
+
+    const existingMessage = document.querySelector(".check-result");
+
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+
+    const message = document.createElement("p");
+    message.className = "check-result";
+    message.textContent = result.message;
+
+    details.appendChild(message);
+
+  } catch (error) {
+    statusElement.textContent = "Check failed";
+
+    const message = document.createElement("p");
+    message.className = "check-result";
+    message.textContent =
+      "The Tate check could not be completed. Please try again later.";
+
+    details.appendChild(message);
+  }
+}
   </script>
 
 </body>
