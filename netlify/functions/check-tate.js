@@ -5,8 +5,7 @@ exports.handler = async function () {
   try {
     const response = await fetch(TATE_URL, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; InstantLovelandTracker/1.0)"
+        "User-Agent": "Instant-Loveland-Tracker/1.0"
       }
     });
 
@@ -18,7 +17,8 @@ exports.handler = async function () {
         },
         body: JSON.stringify({
           status: "CHECK_REQUIRED",
-          message: `Tate returned HTTP ${response.status}.`
+          message: `Tate returned HTTP ${response.status}.`,
+          checkedAt: new Date().toISOString()
         })
       };
     }
@@ -41,26 +41,18 @@ exports.handler = async function () {
       /currently on display at tate britain/i
     ];
 
-    const matchedPattern = displayPatterns.find(pattern =>
+    const isOnDisplay = displayPatterns.some(pattern =>
       pattern.test(text)
     );
 
-    let result;
-
-    if (matchedPattern) {
-      result = {
-        status: "ON_DISPLAY",
-        message: "Tate's page contains explicit evidence that the work is on display.",
-        source: TATE_URL
-      };
-    } else {
-      result = {
-        status: "NOT_CONFIRMED",
-        message:
-          "Tate's page does not currently contain explicit evidence that the work is on public display.",
-        source: TATE_URL
-      };
-    }
+    const result = {
+      status: isOnDisplay ? "ON_DISPLAY" : "NOT_CONFIRMED",
+      message: isOnDisplay
+        ? "Tate's website contains evidence that the work is currently on display."
+        : "Tate's artwork page does not currently confirm that the work is on public display.",
+      source: TATE_URL,
+      checkedAt: new Date().toISOString()
+    };
 
     return {
       statusCode: 200,
@@ -68,11 +60,9 @@ exports.handler = async function () {
         "Content-Type": "application/json",
         "Cache-Control": "no-store"
       },
-      body: JSON.stringify({
-        checkedAt: new Date().toISOString(),
-        ...result
-      })
+      body: JSON.stringify(result)
     };
+
   } catch (error) {
     return {
       statusCode: 200,
@@ -82,7 +72,8 @@ exports.handler = async function () {
       body: JSON.stringify({
         status: "CHECK_REQUIRED",
         message: "The Tate check could not be completed.",
-        error: error.message
+        error: error.message,
+        checkedAt: new Date().toISOString()
       })
     };
   }
