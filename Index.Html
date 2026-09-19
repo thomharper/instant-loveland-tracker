@@ -184,9 +184,15 @@
   try {
     const response = await fetch("/.netlify/functions/check-tate");
 
-    if (!response.ok) {
-      throw new Error("The Tate checker returned an error.");
-    }
+    const response = await fetch(
+  "/.netlify/functions/check-tate?t=" + Date.now()
+);
+
+if (!response.ok) {
+  throw new Error("Function returned HTTP " + response.status);
+}
+
+const result = await response.json();
 
     const result = await response.json();
 
