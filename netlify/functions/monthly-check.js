@@ -1,3 +1,4 @@
+
 exports.handler = async function () {
   const TATE_URL =
     "https://www.tate.org.uk/art/artworks/olitski-instant-loveland-t07244";
@@ -12,15 +13,18 @@ exports.handler = async function () {
     });
 
     if (!response.ok) {
-      console.log(
-        JSON.stringify({
-          status: "CHECK_REQUIRED",
-          message: `Tate returned HTTP ${response.status}.`,
-          checkedAt
-        })
-      );
+      const result = {
+        status: "CHECK_REQUIRED",
+        message: `Tate returned HTTP ${response.status}.`,
+        checkedAt
+      };
 
-      return;
+      console.log(JSON.stringify(result));
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(result)
+      };
     }
 
     const html = await response.text();
@@ -58,15 +62,31 @@ exports.handler = async function () {
 
     console.log(JSON.stringify(result));
 
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(result)
+    };
+
   } catch (error) {
-    console.log(
-      JSON.stringify({
-        status: "CHECK_REQUIRED",
-        message: "The Tate check could not be completed.",
-        error: error.message,
-        checkedAt
-      })
-    );
+    const result = {
+      status: "CHECK_REQUIRED",
+      message: "The Tate check could not be completed.",
+      error: error.message,
+      checkedAt
+    };
+
+    console.log(JSON.stringify(result));
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(result)
+    };
   }
 };
 
